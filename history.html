@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My History — NasscomPrep</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    .page-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem;
+    }
+
+    .hist-list {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .hist-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: .9rem 1.1rem;
+      transition: border-color .2s;
+    }
+
+    .hist-row:hover {
+      border-color: var(--border-hi);
+    }
+
+    .hist-grade {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      width: 32px;
+      text-align: center;
+    }
+
+    .hist-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .hist-mode {
+      font-size: .88rem;
+      font-weight: 500;
+      color: var(--white);
+      display: block;
+    }
+
+    .hist-meta {
+      font-size: .75rem;
+      color: var(--text3);
+    }
+
+    .hist-pct {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      min-width: 54px;
+      text-align: right;
+    }
+
+    .sign-in-prompt {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    .sign-in-prompt .icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">📚 NasscomPrep</a>
+      <div class="nav-links">
+        <a href="quiz.html" class="nav-link">Quiz</a>
+        <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+        <a href="history.html" class="nav-link active">My History</a>
+      </div>
+      <div class="nav-right" id="nav-user-area" style="display:none; align-items:center; gap:.6rem">
+        <img class="nav-avatar" id="nav-avatar" src="" alt="">
+        <span class="nav-user-name" id="nav-name"></span>
+        <button class="btn btn-ghost btn-sm" id="nav-logout">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page-inner">
+    <div class="section-head fu">
+      <div>
+        <h2>📋 My Score History</h2>
+        <p style="font-size:.85rem; margin-top:.2rem">Every session you've completed — track your improvement over time.
+        </p>
+      </div>
+    </div>
+
+    <div id="hist-container" class="fu2">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading…</p>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem; text-align:center">
+      <a href="quiz.html" class="btn btn-primary">Start a New Session →</a>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script type="module">
+    import { onAuth, logOut } from "./js/firebase.js";
+    import { mountHistory } from "./js/history.js";
+
+    function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
+
+    onAuth(user => {
+      const area = document.getElementById("nav-user-area");
+      if (user) {
+        area.style.display = "flex";
+        document.getElementById("nav-avatar").src = user.photoURL || "";
+        document.getElementById("nav-name").textContent = user.displayName?.split(" ")[0];
+      }
+      mountHistory(document.getElementById("hist-container"), user);
+    });
+
+    document.getElementById("nav-logout")?.addEventListener("click", async () => {
+      await logOut(); toast("Signed out.");
+    });
+  </script>
+</body>
+
+</html>

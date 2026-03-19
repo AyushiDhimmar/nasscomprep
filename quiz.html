@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz — NasscomPrep</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <style>
+    /* ── Quiz-specific layout ── */
+    .quiz-shell {
+      display: flex;
+      min-height: calc(100vh - var(--nav-h) - 52px);
+      /* minus stats bar */
+    }
+
+    .quiz-content {
+      flex: 1;
+      padding: 1.25rem;
+      overflow-y: auto;
+    }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .55rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .8rem;
+      color: var(--text2);
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Mode selector ── */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: .875rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .mode-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all .2s;
+      text-align: left;
+    }
+
+    .mode-card:hover {
+      border-color: var(--indigo);
+      background: var(--surface2);
+      transform: translateY(-2px);
+      box-shadow: var(--glow);
+    }
+
+    .mode-card.disabled {
+      opacity: .4;
+      pointer-events: none;
+    }
+
+    .mode-emoji {
+      font-size: 1.6rem;
+      margin-bottom: .6rem;
+    }
+
+    .mode-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: .25rem;
+    }
+
+    .mode-desc {
+      font-size: .78rem;
+      color: var(--text3);
+      line-height: 1.5;
+    }
+
+    .mode-count {
+      margin-top: .5rem;
+      font-size: .72rem;
+      color: var(--indigo-lo);
+      font-weight: 500;
+    }
+
+    /* ── Round buttons ── */
+    .round-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-top: .75rem;
+    }
+
+    .round-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      border-radius: var(--r-sm);
+      padding: .4rem .9rem;
+      font-size: .8rem;
+      cursor: pointer;
+      font-family: 'Instrument Sans', sans-serif;
+      transition: all .18s;
+    }
+
+    .round-btn:hover {
+      border-color: var(--indigo);
+      color: var(--indigo-lo);
+    }
+
+    .round-btn.active {
+      border-color: var(--indigo);
+      background: rgba(91, 106, 240, .15);
+      color: var(--indigo-lo);
+    }
+
+    /* ── Result screen ── */
+    #result-screen {
+      display: none;
+      text-align: center;
+      padding: 3rem 1.5rem;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .result-grade {
+      font-size: 3.5rem;
+      margin-bottom: .75rem;
+    }
+
+    .result-pct {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 4.5rem;
+      font-weight: 800;
+      line-height: 1;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: .25rem;
+    }
+
+    .result-label {
+      font-size: .95rem;
+      color: var(--text2);
+      margin-bottom: 2rem;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: .75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ── Status filter tabs ── */
+    .status-tabs {
+      display: flex;
+      gap: .4rem;
+      margin-bottom: .875rem;
+      flex-wrap: wrap;
+    }
+
+    .status-tab {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      border-radius: var(--r-pill);
+      padding: .3rem .9rem;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: all .18s;
+    }
+
+    .status-tab:hover {
+      color: var(--text);
+      border-color: var(--border-hi);
+    }
+
+    .status-tab.active {
+      background: rgba(91, 106, 240, .15);
+      border-color: var(--indigo);
+      color: var(--indigo-lo);
+    }
+
+    /* ── Splash (mode picker) ── */
+    #mode-splash {
+      padding: 1.25rem;
+    }
+
+    #quiz-area {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">📚 NasscomPrep</a>
+      <div class="nav-links">
+        <a href="quiz.html" class="nav-link active">Quiz</a>
+        <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+        <a href="history.html" class="nav-link">My History</a>
+      </div>
+      <div class="nav-right">
+        <span id="nav-mode-label" class="badge badge-indigo" style="display:none"></span>
+        <button class="btn btn-ghost btn-sm" id="btn-reshuffle" style="display:none">↻ Reshuffle</button>
+        <button class="btn btn-secondary btn-sm" id="btn-result" style="display:none">Results</button>
+        <button class="btn btn-ghost btn-sm" id="btn-new-session" style="display:none">← Change mode</button>
+        <div id="nav-user-area" style="display:none; align-items:center; gap:.6rem">
+          <img class="nav-avatar" id="nav-avatar" src="" alt="">
+          <button class="btn btn-ghost btn-sm" id="nav-logout">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Stats bar (hidden until quiz starts) -->
+  <div class="stats-bar" id="stats-bar" style="display:none">
+    <div class="stat-chip"><span class="dot" style="background:var(--text3)"></span>Answered <strong
+        id="s-answered">0</strong></div>
+    <div class="stat-chip"><span class="dot" style="background:var(--green)"></span>Correct <strong
+        id="s-correct">0</strong></div>
+    <div class="stat-chip"><span class="dot" style="background:var(--red)"></span>Wrong <strong id="s-wrong">0</strong>
+    </div>
+    <div class="score-pill" id="s-pct" style="margin-left:auto">0%</div>
+    <div style="width:100%; margin-top:.3rem">
+      <div class="prog-track">
+        <div class="prog-fill" id="s-prog" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main shell -->
+  <div class="quiz-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="quiz-sidebar" style="display:none">
+      <div class="sidebar-title">Categories</div>
+      <div id="cat-sidebar"></div>
+      <div class="divider"></div>
+      <div class="sidebar-title">Filter by status</div>
+      <div class="status-tabs" style="flex-direction:column;gap:3px">
+        <button class="status-tab active" data-status="all">All</button>
+        <button class="status-tab" data-status="unanswered">⬜ Unanswered</button>
+        <button class="status-tab" data-status="correct">✅ Correct</button>
+        <button class="status-tab" data-status="wrong">❌ Wrong</button>
+      </div>
+      <div class="divider"></div>
+      <div class="sidebar-title">Rounds</div>
+      <div class="round-grid" id="round-buttons" style="flex-direction:column"></div>
+    </aside>
+
+    <!-- Content -->
+    <div class="quiz-content">
+
+      <!-- Mode splash -->
+      <div id="mode-splash">
+        <div style="max-width:720px">
+          <h2 class="fu" style="margin-bottom:.35rem">Choose your quiz mode</h2>
+          <p class="fu2" style="margin-bottom:1.5rem; font-size:.9rem">
+            Questions load live from your Google Sheet — add new ones anytime.
+          </p>
+
+          <div id="q-loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading questions…</p>
+          </div>
+
+          <div id="mode-selector" style="display:none">
+            <div class="mode-grid">
+              <div class="mode-card fu" data-mode="random100">
+                <div class="mode-emoji">🎲</div>
+                <div class="mode-title">Random 100</div>
+                <div class="mode-desc">100 questions picked randomly from all topics.</div>
+                <div class="mode-count" id="mc-random"></div>
+              </div>
+              <div class="mode-card fu2" data-mode="all">
+                <div class="mode-emoji">⚡</div>
+                <div class="mode-title">All Questions</div>
+                <div class="mode-desc">Full question bank — deep-dive preparation.</div>
+                <div class="mode-count" id="mc-all"></div>
+              </div>
+              <div class="mode-card fu3" data-mode="weak" id="mc-weak-card">
+                <div class="mode-emoji">🎯</div>
+                <div class="mode-title">Weak Areas</div>
+                <div class="mode-desc">Only questions you previously got wrong.</div>
+                <div class="mode-count" id="mc-weak"></div>
+              </div>
+              <div class="mode-card fu4" data-mode="round">
+                <div class="mode-emoji">📦</div>
+                <div class="mode-title">By Round</div>
+                <div class="mode-desc">100 questions per round in fixed order.</div>
+                <div class="mode-count" id="mc-round"></div>
+              </div>
+            </div>
+
+            <!-- Round picker (hidden until 'By Round' selected) -->
+            <div id="round-picker" style="display:none; margin-bottom:1.25rem">
+              <p style="font-size:.85rem; margin-bottom:.5rem; color:var(--text2)">Pick a round:</p>
+              <div class="round-grid" id="round-picker-btns"></div>
+            </div>
+
+            <!-- Category picker (for section mode) -->
+            <div style="margin-bottom:1.25rem">
+              <p style="font-size:.85rem; margin-bottom:.5rem; color:var(--text2)">Or practice by category:</p>
+              <div class="cat-pills" id="cat-pills"></div>
+            </div>
+
+            <button class="btn btn-primary btn-lg" id="btn-start">Start Quiz →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quiz area -->
+      <div id="quiz-area">
+        <div id="quiz-questions"></div>
+        <div id="result-screen">
+          <div class="result-grade" id="res-emoji">🏆</div>
+          <div class="result-pct" id="res-pct">0%</div>
+          <div class="result-label" id="res-label"></div>
+          <div class="stat-row" style="max-width:400px;margin:0 auto 2rem">
+            <div class="stat-tile">
+              <div class="stat-tile-val" style="color:var(--green)" id="res-correct">0</div>
+              <div class="stat-tile-label">Correct</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-val" style="color:var(--red)" id="res-wrong">0</div>
+              <div class="stat-tile-label">Wrong</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-val" style="color:var(--gold)" id="res-skip">0</div>
+              <div class="stat-tile-label">Skipped</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-val" style="color:var(--violet)" id="res-time">—</div>
+              <div class="stat-tile-label">Time</div>
+            </div>
+          </div>
+          <div class="result-actions">
+            <button class="btn btn-primary" id="btn-retry-wrong">🎯 Retry Wrong</button>
+            <button class="btn btn-secondary" id="btn-new-session2">New Session</button>
+            <a href="leaderboard.html" class="btn btn-ghost">🏆 Leaderboard</a>
+          </div>
+          <p id="res-saved" style="margin-top:1rem;font-size:.8rem;color:var(--text3)"></p>
+        </div>
+      </div>
+
+    </div><!-- /quiz-content -->
+  </div><!-- /quiz-shell -->
+
+  <div id="toast"></div>
+
+  <script type="module">
+    import { onAuth, logOut } from "./js/firebase.js";
+    import {
+      initQuiz, buildSession, answer, getStats,
+      getFilteredQ, saveSession, getWeakCount,
+      shuffle, fmtTime, gradeInfo, renderQCard,
+      state, getCategories2
+    } from "./js/quiz.js";
+
+    // ── util ──────────────────────────────────────
+    function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); }
+    function $id(id) { return document.getElementById(id); }
+
+    // ── Auth ──────────────────────────────────────
+    let currentUser = null;
+    onAuth(user => {
+      currentUser = user;
+      state.user = user;
+      const area = $id("nav-user-area");
+      if (user) {
+        area.style.display = "flex";
+        $id("nav-avatar").src = user.photoURL || "";
+      } else {
+        area.style.display = "none";
+      }
+    });
+    $id("nav-logout")?.addEventListener("click", async () => { await logOut(); toast("Signed out."); });
+
+    // ── State ─────────────────────────────────────
+    let allQ = [];
+    let curCat = "All";
+    let curStatus = "all";
+    let selectedMode = "random100";
+    let selectedCat = "All";
+    let selectedRound = 1;
+    let quizStarted = false;
+
+    // ── Load questions ────────────────────────────
+    async function init() {
+      allQ = await initQuiz();
+
+      // fill counts
+      const total = allQ.length;
+      $id("mc-random").textContent = `${Math.min(100, total)} questions`;
+      $id("mc-all").textContent = `${total} questions`;
+      const weakCt = getWeakCount(allQ);
+      $id("mc-weak").textContent = weakCt > 0 ? `${weakCt} weak questions` : "No weak areas yet";
+      if (weakCt === 0) $id("mc-weak-card").classList.add("disabled");
+
+      // round buttons
+      const rounds = Math.ceil(total / 100);
+      $id("mc-round").textContent = `${rounds} rounds of 100`;
+      const rpb = $id("round-picker-btns");
+      for (let r = 1; r <= rounds; r++) {
+        const b = document.createElement("button");
+        b.className = "round-btn" + (r === 1 ? " active" : "");
+        b.textContent = `Round ${r}`;
+        b.dataset.round = r;
+        b.addEventListener("click", () => {
+          selectedRound = r;
+          rpb.querySelectorAll(".round-btn").forEach(x => x.classList.remove("active"));
+          b.classList.add("active");
+        });
+        rpb.appendChild(b);
+      }
+
+      // category pills
+      const cats = getCategories2();
+      const pillsEl = $id("cat-pills");
+      cats.forEach(cat => {
+        const p = document.createElement("button");
+        p.className = "cat-pill" + (cat === "All" ? " active" : "");
+        p.textContent = cat;
+        p.addEventListener("click", () => {
+          pillsEl.querySelectorAll(".cat-pill").forEach(x => x.classList.remove("active"));
+          p.classList.add("active");
+          selectedCat = cat;
+          if (cat !== "All") {
+            selectedMode = "section";
+            $id("mode-grid-cards").querySelectorAll(".mode-card").forEach(c => c.classList.remove("mode-card-active"));
+          }
+        });
+        pillsEl.appendChild(p);
+      });
+
+      $id("q-loading").style.display = "none";
+      $id("mode-selector").style.display = "block";
+    }
+
+    // ── Mode card clicks ──────────────────────────
+    document.querySelectorAll(".mode-card").forEach(card => {
+      card.addEventListener("click", () => {
+        selectedMode = card.dataset.mode;
+        selectedCat = "All";
+        // reset cat pills
+        document.querySelectorAll(".cat-pill").forEach(p => p.classList.remove("active"));
+        document.querySelector(".cat-pill")?.classList.add("active");
+        // round picker
+        $id("round-picker").style.display = selectedMode === "round" ? "block" : "none";
+      });
+    });
+
+    // ── Start quiz ────────────────────────────────
+    $id("btn-start").addEventListener("click", startQuiz);
+
+    function startQuiz() {
+      const qs = buildSession(selectedMode, selectedCat, selectedRound);
+      if (qs.length === 0) { toast("No questions found for this selection."); return; }
+      quizStarted = true;
+
+      // show quiz UI
+      $id("mode-splash").style.display = "none";
+      $id("quiz-area").style.display = "block";
+      $id("stats-bar").style.display = "flex";
+      $id("quiz-sidebar").style.display = "block";
+      $id("btn-reshuffle").style.display = "inline-flex";
+      $id("btn-result").style.display = "inline-flex";
+      $id("btn-new-session").style.display = "inline-flex";
+      $id("nav-mode-label").textContent = labelFor(selectedMode, selectedCat);
+      $id("nav-mode-label").style.display = "inline-flex";
+
+      // build sidebar cats
+      buildSidebar();
+      renderQuestions();
+      updateStats();
+    }
+
+    function labelFor(mode, cat) {
+      const map = { random100: "Random 100", all: "All Questions", weak: "Weak Areas", round: `Round ${selectedRound}`, section: cat };
+      return map[mode] || mode;
+    }
+
+    // ── Sidebar ───────────────────────────────────
+    function buildSidebar() {
+      const cats = ["All", ...new Set(state.activeQ.map(q => q.t))];
+      const sb = $id("cat-sidebar");
+      sb.innerHTML = "";
+      cats.forEach(cat => {
+        const count = cat === "All" ? state.activeQ.length : state.activeQ.filter(q => q.t === cat).length;
+        const b = document.createElement("button");
+        b.className = "sidebar-btn" + (cat === curCat ? " active" : "");
+        b.innerHTML = `${cat} <span class="sidebar-count">${count}</span>`;
+        b.addEventListener("click", () => {
+          curCat = cat;
+          sb.querySelectorAll(".sidebar-btn").forEach(x => x.classList.remove("active"));
+          b.classList.add("active");
+          renderQuestions();
+        });
+        sb.appendChild(b);
+      });
+
+      // round buttons in sidebar
+      const rounds = Math.ceil(state.allQ.length / 100);
+      const rbEl = $id("round-buttons");
+      rbEl.innerHTML = "";
+      for (let r = 1; r <= rounds; r++) {
+        const b = document.createElement("button");
+        b.className = "round-btn";
+        b.textContent = `Round ${r} (Q${(r - 1) * 100 + 1}–${Math.min(r * 100, state.allQ.length)})`;
+        b.addEventListener("click", () => {
+          buildSession("round", "All", r);
+          curCat = "All"; curStatus = "all";
+          buildSidebar(); renderQuestions(); updateStats();
+          $id("nav-mode-label").textContent = `Round ${r}`;
+          rbEl.querySelectorAll(".round-btn").forEach(x => x.classList.remove("active"));
+          b.classList.add("active");
+        });
+        rbEl.appendChild(b);
+      }
+    }
+
+    // ── Status filter tabs ────────────────────────
+    document.querySelectorAll(".status-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        curStatus = tab.dataset.status;
+        document.querySelectorAll(".status-tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        renderQuestions();
+      });
+    });
+
+    // ── Render questions ──────────────────────────
+    function renderQuestions() {
+      const qs = getFilteredQ(curCat, curStatus);
+      const el = $id("quiz-questions");
+      $id("result-screen").style.display = "none";
+      if (qs.length === 0) {
+        el.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>No questions match this filter.</p></div>`;
+        return;
+      }
+      el.innerHTML = qs.map(q => renderQCard(q)).join("");
+      // attach click events
+      el.querySelectorAll(".opt:not(.locked)").forEach(opt => {
+        opt.addEventListener("click", () => handleAnswer(+opt.dataset.qid, +opt.dataset.idx));
+      });
+    }
+
+    function handleAnswer(qid, idx) {
+      const isRight = answer(qid, idx);
+      if (isRight === null) return;
+      // update card in DOM
+      const card = document.getElementById(`qc-${qid}`);
+      if (!card) return;
+      card.classList.add(isRight ? "correct-ans" : "wrong-ans");
+      card.querySelectorAll(".opt").forEach((el, i) => {
+        el.classList.add("locked");
+        if (i === state.activeQ.find(q => q.id === qid)?.a) el.classList.add("reveal");
+        else if (i === idx && !isRight) el.classList.add("wrong");
+      });
+      const exp = document.getElementById(`exp-${qid}`);
+      if (exp) exp.classList.add("show");
+      updateStats();
+    }
+
+    function updateStats() {
+      const s = getStats();
+      $id("s-answered").textContent = s.total;
+      $id("s-correct").textContent = s.correct;
+      $id("s-wrong").textContent = s.wrong;
+      $id("s-pct").textContent = s.pct + "%";
+      $id("s-prog").style.width = Math.round(s.total / s.outOf * 100) + "%";
+    }
+
+    // ── Results ───────────────────────────────────
+    $id("btn-result").addEventListener("click", showResult);
+
+    async function showResult() {
+      const s = getStats();
+      const g = gradeInfo(s.pct);
+      $id("quiz-questions").innerHTML = "";
+      $id("result-screen").style.display = "block";
+      $id("res-emoji").textContent = g.emoji;
+      $id("res-pct").textContent = s.pct + "%";
+      $id("res-label").textContent = `${s.correct} correct out of ${s.total} answered. ${g.label}!`;
+      $id("res-correct").textContent = s.correct;
+      $id("res-wrong").textContent = s.wrong;
+      $id("res-skip").textContent = s.outOf - s.total;
+      $id("res-time").textContent = fmtTime(s.elapsed);
+      // save
+      if (state.user && !state.saved) {
+        await saveSession();
+        $id("res-saved").textContent = "✅ Score saved to your history!";
+      } else if (!state.user) {
+        $id("res-saved").textContent = "Sign in to save your score to the leaderboard.";
+      }
+    }
+
+    $id("btn-retry-wrong").addEventListener("click", () => {
+      buildSession("weak", "All");
+      curCat = "All"; curStatus = "all";
+      buildSidebar(); renderQuestions(); updateStats();
+      $id("result-screen").style.display = "none";
+    });
+
+    // ── New session ───────────────────────────────
+    function resetToSplash() {
+      quizStarted = false;
+      $id("mode-splash").style.display = "block";
+      $id("quiz-area").style.display = "none";
+      $id("stats-bar").style.display = "none";
+      $id("quiz-sidebar").style.display = "none";
+      $id("btn-reshuffle").style.display = "none";
+      $id("btn-result").style.display = "none";
+      $id("btn-new-session").style.display = "none";
+      $id("nav-mode-label").style.display = "none";
+      curCat = "All"; curStatus = "all";
+    }
+    $id("btn-new-session").addEventListener("click", resetToSplash);
+    $id("btn-new-session2").addEventListener("click", resetToSplash);
+
+    // ── Reshuffle ─────────────────────────────────
+    $id("btn-reshuffle").addEventListener("click", () => {
+      state.activeQ = shuffle(state.activeQ);
+      renderQuestions();
+      toast("Questions reshuffled!");
+    });
+
+    // ── Go ────────────────────────────────────────
+    init().catch(e => {
+      $id("q-loading").innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load questions. Check your Sheet config.</p></div>`;
+      console.error(e);
+    });
+  </script>
+</body>
+
+</html>

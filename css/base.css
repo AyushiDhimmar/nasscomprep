@@ -1,0 +1,283 @@
+/* ═══════════════════════════════════════════
+   base.css — Variables · Reset · Typography
+   NasscomPrep · AI-ML Engineer Quiz
+═══════════════════════════════════════════ */
+
+:root {
+  --bg: #06080f;
+  --surface: #0f1120;
+  --surface2: #171a2e;
+  --surface3: #1f2340;
+  --border: #252840;
+  --border-hi: #2e3355;
+
+  --indigo: #5b6af0;
+  --indigo-lo: #7b89f4;
+  --violet: #9d6ef5;
+  --cyan: #22d4c8;
+  --green: #2ed573;
+  --red: #ff5c6a;
+  --gold: #f5c842;
+  --amber: #fb923c;
+
+  --text: #e2e4f0;
+  --text2: #9096b8;
+  --text3: #555e80;
+  --white: #fff;
+
+  --grad: linear-gradient(135deg, #5b6af0, #9d6ef5);
+  --grad-green: linear-gradient(135deg, #22d4c8, #2ed573);
+  --grad-gold: linear-gradient(135deg, #f5c842, #fb923c);
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, .45);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, .55);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, .65);
+  --glow: 0 0 28px rgba(91, 106, 240, .28);
+
+  --nav-h: 62px;
+  --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Instrument Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 8%, rgba(91, 106, 240, .07) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 85% 85%, rgba(157, 110, 245, .06) 0%, transparent 55%);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--white);
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+}
+
+h2 {
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+h3 {
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+}
+
+a {
+  color: var(--indigo-lo);
+  text-decoration: none;
+  transition: color .2s;
+}
+
+a:hover {
+  color: var(--violet);
+}
+
+p {
+  color: var(--text2);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hi);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--indigo);
+}
+
+::selection {
+  background: rgba(91, 106, 240, .35);
+  color: var(--white);
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* ── Spinner ── */
+.spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--border);
+  border-top-color: var(--indigo);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem;
+  color: var(--text2);
+  font-size: .88rem;
+}
+
+/* ── Toast ── */
+#toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--surface3);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--r-pill);
+  padding: .45rem 1.4rem;
+  font-size: .82rem;
+  color: var(--text);
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity .3s, transform .3s;
+  pointer-events: none;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px)
+  }
+
+  to {
+    opacity: 1;
+    transform: none
+  }
+}
+
+.fu {
+  animation: fadeUp .42s var(--ease) both;
+}
+
+.fu2 {
+  animation: fadeUp .42s .09s var(--ease) both;
+}
+
+.fu3 {
+  animation: fadeUp .42s .18s var(--ease) both;
+}
+
+.fu4 {
+  animation: fadeUp .42s .27s var(--ease) both;
+}
+
+/* ── Modal ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 15, .88);
+  backdrop-filter: blur(8px);
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+
+.overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--r-xl);
+  padding: 2rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  transform: scale(.95);
+  transition: transform .25s var(--ease);
+}
+
+.overlay.open .modal {
+  transform: scale(1);
+}
+
+.modal-title {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 1.25rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
