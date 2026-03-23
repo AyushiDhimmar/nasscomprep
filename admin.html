@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — NasscomPrep</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <style>
+        .page-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem;
+        }
+
+        /* ── Access denied screen ── */
+        #access-denied {
+            display: none;
+            min-height: calc(100vh - var(--nav-h));
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 2rem;
+        }
+
+        #access-denied .icon {
+            font-size: 3.5rem;
+        }
+
+        /* ── Loading screen ── */
+        #loading-screen {
+            display: flex;
+            min-height: calc(100vh - var(--nav-h));
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* ── Dashboard ── */
+        #dashboard {
+            display: none;
+        }
+
+        /* ── Summary tiles ── */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-tile {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .summary-tile .val {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: .3rem;
+        }
+
+        .summary-tile .lbl {
+            font-size: .72rem;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: .6px;
+        }
+
+        /* ── Section cards ── */
+        .section-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .section-card-head {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+
+        .section-card-head h3 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .section-card-body {
+            padding: 0;
+        }
+
+        /* ── Table ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .83rem;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: .65rem 1rem;
+            font-size: .7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text3);
+            border-bottom: 1px solid var(--border);
+            background: var(--surface2);
+        }
+
+        .data-table td {
+            padding: .7rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text2);
+            vertical-align: middle;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:hover td {
+            background: var(--surface2);
+        }
+
+        /* ── Wrong questions bar ── */
+        .wrong-bar-wrap {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .wrong-bar-track {
+            flex: 1;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .wrong-bar-fill {
+            height: 100%;
+            background: var(--red);
+            border-radius: 3px;
+        }
+
+        .wrong-count {
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--red);
+            min-width: 28px;
+            text-align: right;
+        }
+
+        /* ── User row ── */
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border-hi);
+            vertical-align: middle;
+            margin-right: .5rem;
+        }
+
+        .device-badge {
+            font-size: .68rem;
+            padding: .2rem .6rem;
+            border-radius: var(--r-pill);
+            font-weight: 500;
+        }
+
+        .device-mobile {
+            background: rgba(157, 110, 245, .15);
+            color: var(--violet);
+        }
+
+        .device-desktop {
+            background: rgba(91, 106, 240, .15);
+            color: var(--indigo-lo);
+        }
+
+        /* ── Score chip ── */
+        .score-chip {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-size: .85rem;
+            font-weight: 700;
+        }
+
+        /* ── Category weakness bars ── */
+        .cat-row {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            padding: .6rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cat-row:last-child {
+            border-bottom: none;
+        }
+
+        .cat-name {
+            width: 160px;
+            font-size: .82rem;
+            color: var(--text2);
+            flex-shrink: 0;
+        }
+
+        .cat-bar-track {
+            flex: 1;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .cat-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width .6s;
+        }
+
+        .cat-avg {
+            font-size: .8rem;
+            font-weight: 600;
+            min-width: 42px;
+            text-align: right;
+        }
+
+        /* ── Login history ── */
+        .login-row {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            padding: .65rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: .82rem;
+        }
+
+        .login-row:last-child {
+            border-bottom: none;
+        }
+
+        .login-name {
+            font-weight: 500;
+            color: var(--text);
+            min-width: 140px;
+        }
+
+        .login-email {
+            color: var(--text3);
+            font-size: .75rem;
+            flex: 1;
+        }
+
+        .login-time {
+            color: var(--text3);
+            font-size: .75rem;
+            min-width: 130px;
+            text-align: right;
+        }
+
+        /* ── Tabs ── */
+        .tab-row {
+            display: flex;
+            gap: .4rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            border-radius: var(--r-pill);
+            padding: .4rem 1.1rem;
+            font-size: .82rem;
+            cursor: pointer;
+            font-family: 'Instrument Sans', sans-serif;
+            transition: all .18s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text);
+            border-color: var(--border-hi);
+        }
+
+        .tab-btn.active {
+            background: rgba(91, 106, 240, .15);
+            border-color: var(--indigo);
+            color: var(--indigo-lo);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* ── Refresh btn ── */
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text2);
+            border-radius: var(--r-sm);
+            padding: .35rem .85rem;
+            font-size: .78rem;
+            cursor: pointer;
+            font-family: 'Instrument Sans', sans-serif;
+            transition: all .18s;
+        }
+
+        .refresh-btn:hover {
+            border-color: var(--indigo);
+            color: var(--indigo-lo);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">📚 NasscomPrep</a>
+            <div class="nav-links">
+                <a href="quiz.html" class="nav-link">Quiz</a>
+                <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+                <a href="history.html" class="nav-link">My History</a>
+                <a href="admin.html" class="nav-link active">Admin</a>
+            </div>
+            <div class="nav-right" id="nav-user-area" style="display:none; align-items:center; gap:.6rem">
+                <img class="nav-avatar" id="nav-avatar" src="" alt="">
+                <span class="nav-user-name" id="nav-name"></span>
+                <button class="btn btn-ghost btn-sm" id="nav-logout">Sign out</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Loading -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p style="color:var(--text2);font-size:.9rem">Checking access…</p>
+    </div>
+
+    <!-- Access Denied -->
+    <div id="access-denied">
+        <div class="icon">🔒</div>
+        <h2>Access Denied</h2>
+        <p style="max-width:340px">This page is only accessible to authorised admins. Sign in with an admin Google
+            account.</p>
+        <a href="index.html" class="btn btn-primary" style="margin-top:.5rem">← Back to Home</a>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard">
+        <div class="page-inner">
+
+            <div
+                style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.75rem">
+                <div>
+                    <h2 class="fu" style="margin-bottom:.2rem">🛠️ Admin Dashboard</h2>
+                    <p class="fu2" style="font-size:.85rem">Live data from all NasscomPrep users.</p>
+                </div>
+                <button class="refresh-btn" id="btn-refresh">↻ Refresh data</button>
+            </div>
+
+            <!-- Summary tiles -->
+            <div class="summary-grid fu3" id="summary-tiles">
+                <div class="summary-tile">
+                    <div class="val" id="st-users" style="color:var(--indigo-lo)">—</div>
+                    <div class="lbl">Total Users</div>
+                </div>
+                <div class="summary-tile">
+                    <div class="val" id="st-sessions" style="color:var(--violet)">—</div>
+                    <div class="lbl">Total Sessions</div>
+                </div>
+                <div class="summary-tile">
+                    <div class="val" id="st-questions" style="color:var(--cyan)">—</div>
+                    <div class="lbl">Questions Answered</div>
+                </div>
+                <div class="summary-tile">
+                    <div class="val" id="st-avg" style="color:var(--green)">—</div>
+                    <div class="lbl">Avg Score</div>
+                </div>
+                <div class="summary-tile">
+                    <div class="val" id="st-active" style="color:var(--gold)">—</div>
+                    <div class="lbl">Active Today</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tab-row fu4">
+                <button class="tab-btn active" data-tab="wrong">❌ Most Wrong Questions</button>
+                <button class="tab-btn" data-tab="users">👥 All Users</button>
+                <button class="tab-btn" data-tab="logins">📅 Login History</button>
+                <button class="tab-btn" data-tab="categories">📊 Category Weakness</button>
+            </div>
+
+            <!-- Tab: Most Wrong Questions -->
+            <div class="tab-panel active" id="tab-wrong">
+                <div class="section-card">
+                    <div class="section-card-head">
+                        <h3>❌ Questions Students Get Wrong Most</h3>
+                        <span class="badge badge-red" id="wrong-count-badge">Loading…</span>
+                    </div>
+                    <div class="section-card-body" id="wrong-table-wrap">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: All Users -->
+            <div class="tab-panel" id="tab-users">
+                <div class="section-card">
+                    <div class="section-card-head">
+                        <h3>👥 All Registered Users</h3>
+                        <span class="badge badge-indigo" id="user-count-badge">Loading…</span>
+                    </div>
+                    <div class="section-card-body" id="users-table-wrap">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Login History -->
+            <div class="tab-panel" id="tab-logins">
+                <div class="section-card">
+                    <div class="section-card-head">
+                        <h3>📅 Recent Login History</h3>
+                        <span class="badge badge-violet" id="login-count-badge">Loading…</span>
+                    </div>
+                    <div class="section-card-body" id="logins-wrap">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Category Weakness -->
+            <div class="tab-panel" id="tab-categories">
+                <div class="section-card">
+                    <div class="section-card-head">
+                        <h3>📊 Average Score by Category</h3>
+                        <p style="font-size:.78rem;color:var(--text3);margin:0">Lower % = students struggle more in this
+                            topic</p>
+                    </div>
+                    <div class="section-card-body" id="category-wrap">
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script type="module">
+        import { onAuth, logOut, auth, db } from "./js/firebase.js";
+        import { QUESTIONS } from "./js/questions.js";
+        import {
+            collection, getDocs, query,
+            orderBy, limit, where, getDoc, doc
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // ─────────────────────────────────────────────
+        // 🔐 ADMIN EMAILS — add your Gmail here
+        // ─────────────────────────────────────────────
+        const ADMIN_EMAILS = [
+            "ayushidhimmar2104@gmail.com",
+            // add more admin emails below if needed:
+            // "anotheremail@gmail.com",
+        ];
+
+        // ── utils ──────────────────────────────────
+        function toast(msg) {
+            const t = document.getElementById("toast");
+            t.textContent = msg; t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 2500);
+        }
+        function $id(id) { return document.getElementById(id); }
+        function esc(s) { return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+        function fmtDate(ts) {
+            if (!ts) return "—";
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+        }
+        function fmtDateShort(ts) {
+            if (!ts) return "—";
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+        }
+        function isToday(ts) {
+            if (!ts) return false;
+            const d = ts.toDate ? ts.toDate() : new Date(ts);
+            const now = new Date();
+            return d.toDateString() === now.toDateString();
+        }
+        function scoreColor(pct) {
+            if (pct >= 75) return "var(--green)";
+            if (pct >= 50) return "var(--gold)";
+            return "var(--red)";
+        }
+
+        // ── Tab switching ──────────────────────────
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+                document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+                btn.classList.add("active");
+                $id("tab-" + btn.dataset.tab).classList.add("active");
+            });
+        });
+
+        // ── Auth gate ──────────────────────────────
+        onAuth(async user => {
+            $id("loading-screen").style.display = "none";
+
+            if (!user || !ADMIN_EMAILS.includes(user.email)) {
+                $id("access-denied").style.display = "flex";
+                return;
+            }
+
+            // show nav user info
+            $id("nav-user-area").style.display = "flex";
+            $id("nav-avatar").src = user.photoURL || "";
+            $id("nav-name").textContent = user.displayName?.split(" ")[0] || "";
+
+            // show dashboard
+            $id("dashboard").style.display = "block";
+            await loadAll();
+        });
+
+        $id("nav-logout")?.addEventListener("click", async () => { await logOut(); toast("Signed out."); });
+        $id("btn-refresh").addEventListener("click", async () => { toast("Refreshing…"); await loadAll(); });
+
+        // ── Load all data ──────────────────────────
+        async function loadAll() {
+            await Promise.all([
+                loadSummary(),
+                loadWrongQuestions(),
+                loadUsers(),
+                loadLoginHistory(),
+                loadCategoryWeakness(),
+            ]);
+        }
+
+        // ── Summary tiles ──────────────────────────
+        async function loadSummary() {
+            const [usersSnap, scoresSnap] = await Promise.all([
+                getDocs(collection(db, "users")),
+                getDocs(collection(db, "scores")),
+            ]);
+
+            const users = [];
+            const scores = [];
+            usersSnap.forEach(d => users.push(d.data()));
+            scoresSnap.forEach(d => scores.push(d.data()));
+
+            const totalQ = scores.reduce((s, r) => s + (r.total || 0), 0);
+            const avgScore = scores.length > 0
+                ? Math.round(scores.reduce((s, r) => s + (r.pct || 0), 0) / scores.length)
+                : 0;
+            const activeToday = scores.filter(r => isToday(r.createdAt)).length;
+
+            $id("st-users").textContent = users.length;
+            $id("st-sessions").textContent = scores.length;
+            $id("st-questions").textContent = totalQ;
+            $id("st-avg").textContent = avgScore + "%";
+            $id("st-active").textContent = activeToday;
+        }
+
+        // ── Most Wrong Questions ───────────────────
+        async function loadWrongQuestions() {
+            const wrap = $id("wrong-table-wrap");
+            const snap = await getDocs(collection(db, "wrongAnswers"));
+            const map = {};
+
+            snap.forEach(d => {
+                const data = d.data();
+                (data.questionIds || []).forEach(qid => {
+                    map[qid] = (map[qid] || 0) + 1;
+                });
+            });
+
+            // sort by most wrong
+            const sorted = Object.entries(map)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 30);
+
+            $id("wrong-count-badge").textContent = `${sorted.length} questions`;
+
+            if (sorted.length === 0) {
+                wrap.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No wrong answer data yet. Students need to complete quizzes first.</p></div>`;
+                return;
+            }
+
+            const maxCount = sorted[0]?.[1] || 1;
+
+            const rows = sorted.map(([qid, count], i) => {
+                const q = QUESTIONS.find(x => x.id === parseInt(qid));
+                const pct = Math.round((count / maxCount) * 100);
+                const text = q ? esc(q.q.substring(0, 80)) + (q.q.length > 80 ? "…" : "") : `Question ID ${qid} (deleted)`;
+                const cat = q ? q.t : "—";
+                return `<tr>
+      <td style="color:var(--text3);font-weight:700;width:36px">${i + 1}</td>
+      <td>
+        <div style="font-size:.83rem;color:var(--text);margin-bottom:.3rem">${text}</div>
+        <span class="badge badge-indigo" style="font-size:.65rem">${esc(cat)}</span>
+      </td>
+      <td style="width:220px">
+        <div class="wrong-bar-wrap">
+          <div class="wrong-bar-track"><div class="wrong-bar-fill" style="width:${pct}%"></div></div>
+          <span class="wrong-count">${count}×</span>
+        </div>
+      </td>
+    </tr>`;
+            }).join("");
+
+            wrap.innerHTML = `<table class="data-table">
+    <thead><tr><th>#</th><th>Question</th><th>Wrong Count</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+        }
+
+        // ── All Users ──────────────────────────────
+        async function loadUsers() {
+            const wrap = $id("users-table-wrap");
+            const snap = await getDocs(collection(db, "users"));
+            const users = [];
+            snap.forEach(d => users.push(d.data()));
+
+            // sort by last active
+            users.sort((a, b) => {
+                const ta = a.lastActiveAt?.toDate?.() || a.joinedAt?.toDate?.() || new Date(0);
+                const tb = b.lastActiveAt?.toDate?.() || b.joinedAt?.toDate?.() || new Date(0);
+                return tb - ta;
+            });
+
+            $id("user-count-badge").textContent = `${users.length} users`;
+
+            if (users.length === 0) {
+                wrap.innerHTML = `<div class="empty-state"><div class="icon">👤</div><p>No users yet.</p></div>`;
+                return;
+            }
+
+            const rows = users.map(u => {
+                const avatar = u.photo
+                    ? `<img class="user-avatar" src="${esc(u.photo)}" alt="" onerror="this.style.display='none'">`
+                    : `<span style="display:inline-block;width:30px;height:30px;border-radius:50%;background:var(--indigo);color:#fff;text-align:center;line-height:30px;font-size:.8rem;margin-right:.5rem">${(u.name || "?")[0]}</span>`;
+                const lastSeen = fmtDate(u.lastActiveAt || u.joinedAt);
+                const joined = fmtDate(u.joinedAt);
+                const best = u.bestScore != null ? `<span class="score-chip" style="color:${scoreColor(u.bestScore)}">${u.bestScore}%</span>` : "—";
+                return `<tr>
+      <td>${avatar}<span style="color:var(--text)">${esc(u.name || "Unknown")}</span></td>
+      <td style="color:var(--text3);font-size:.78rem">${esc(u.email || "")}</td>
+      <td style="text-align:center">${u.totalSessions || 0}</td>
+      <td>${best}</td>
+      <td style="color:var(--text3);font-size:.75rem">${lastSeen}</td>
+      <td style="color:var(--text3);font-size:.75rem">${joined}</td>
+    </tr>`;
+            }).join("");
+
+            wrap.innerHTML = `<div style="overflow-x:auto"><table class="data-table">
+    <thead><tr><th>User</th><th>Email</th><th style="text-align:center">Sessions</th><th>Best Score</th><th>Last Active</th><th>Joined</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+        }
+
+        // ── Login History ──────────────────────────
+        async function loadLoginHistory() {
+            const wrap = $id("logins-wrap");
+            const snap = await getDocs(
+                query(collection(db, "loginHistory"), orderBy("loginAt", "desc"), limit(100))
+            );
+            const logins = [];
+            snap.forEach(d => logins.push(d.data()));
+
+            $id("login-count-badge").textContent = `${logins.length} recent logins`;
+
+            if (logins.length === 0) {
+                wrap.innerHTML = `<div class="empty-state"><div class="icon">📅</div><p>No login history yet. Will appear after users sign in.</p></div>`;
+                return;
+            }
+
+            const html = logins.map(l => {
+                const deviceCls = l.device === "Mobile" ? "device-mobile" : "device-desktop";
+                const deviceIcon = l.device === "Mobile" ? "📱" : "🖥️";
+                return `<div class="login-row">
+      <span class="login-name">${esc(l.name || "Unknown")}</span>
+      <span class="login-email">${esc(l.email || "")}</span>
+      <span class="device-badge ${deviceCls}">${deviceIcon} ${esc(l.device || "Desktop")}</span>
+      <span class="login-time">${fmtDateShort(l.loginAt)}</span>
+    </div>`;
+            }).join("");
+
+            wrap.innerHTML = `<div>${html}</div>`;
+        }
+
+        // ── Category Weakness ──────────────────────
+        async function loadCategoryWeakness() {
+            const wrap = $id("category-wrap");
+            const snap = await getDocs(collection(db, "scores"));
+            const catMap = {};
+
+            snap.forEach(d => {
+                const data = d.data();
+                const cat = data.category || "All";
+                if (cat === "All") return; // skip mixed sessions
+                if (!catMap[cat]) catMap[cat] = { total: 0, count: 0 };
+                catMap[cat].total += data.pct || 0;
+                catMap[cat].count += 1;
+            });
+
+            const cats = Object.entries(catMap)
+                .map(([cat, v]) => ({ cat, avg: Math.round(v.total / v.count) }))
+                .sort((a, b) => a.avg - b.avg); // lowest first (most struggling)
+
+            if (cats.length === 0) {
+                wrap.innerHTML = `<div class="empty-state"><div class="icon">📊</div><p>No category data yet. Students need to practice section-wise quizzes.</p></div>`;
+                return;
+            }
+
+            const html = cats.map(({ cat, avg }) => {
+                const color = avg >= 75 ? "var(--green)" : avg >= 50 ? "var(--gold)" : "var(--red)";
+                return `<div class="cat-row">
+      <span class="cat-name">${esc(cat)}</span>
+      <div class="cat-bar-track">
+        <div class="cat-bar-fill" style="width:${avg}%;background:${color}"></div>
+      </div>
+      <span class="cat-avg" style="color:${color}">${avg}%</span>
+    </div>`;
+            }).join("");
+
+            wrap.innerHTML = `<div>${html}</div>`;
+        }
+    </script>
+</body>
+
+</html>

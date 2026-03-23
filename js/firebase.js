@@ -21,13 +21,12 @@ import {
 //  Firebase Console → Project Settings → Your Apps → Web
 // ─────────────────────────────────────────────
 export const firebaseConfig = {
-  apiKey: "AIzaSyAD0A7e88MbDU4kjidg0iDSJ2aoQNaZtyQ",
-  authDomain: "nasscomprep.firebaseapp.com",
-  projectId: "nasscomprep",
-  storageBucket: "nasscomprep.firebasestorage.app",
-  messagingSenderId: "280841749276",
-  appId: "1:280841749276:web:af35389af00c18e87df0d9",
-  measurementId: "G-X5MD27J4HG"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 // ── Init ──────────────────────────────────────
@@ -62,10 +61,11 @@ export function onAuth(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
-/** Upsert user profile in Firestore */
+/** Upsert user profile in Firestore + save login history */
 async function upsertUser(user) {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
+
   if (!snap.exists()) {
     await setDoc(ref, {
       uid: user.uid,
@@ -77,6 +77,33 @@ async function upsertUser(user) {
       bestScore: 0,
     });
   }
+
+  // ── Save login history entry ──
+  const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
+    ? "Mobile" : "Desktop";
+
+  await addDoc(collection(db, "loginHistory"), {
+    uid: user.uid,
+    name: user.displayName,
+    email: user.email,
+    photo: user.photoURL,
+    device,
+    loginAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Save wrong question IDs for admin analytics
+ * @param {string} uid
+ * @param {number[]} wrongIds
+ */
+export async function saveWrongAnswers(uid, wrongIds) {
+  if (!wrongIds || wrongIds.length === 0) return;
+  await addDoc(collection(db, "wrongAnswers"), {
+    uid,
+    questionIds: wrongIds,
+    createdAt: serverTimestamp(),
+  });
 }
 
 // ═══════════════════════════════════════════

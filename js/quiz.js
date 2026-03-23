@@ -3,7 +3,7 @@
 //  NasscomPrep · AI-ML Engineer Quiz
 // ═══════════════════════════════════════════
 
-import { saveScore } from "./firebase.js";
+import { saveScore, saveWrongAnswers } from "./firebase.js";
 import { loadQuestions, getCategories } from "./sheets.js";
 
 // ── State ─────────────────────────────────────
@@ -105,14 +105,24 @@ export async function saveSession() {
   if (!state.user || state.saved) return;
   const stats = getStats();
   if (stats.total === 0) return;
-  await saveScore(state.user, {
-    mode: state.mode,
-    category: state.category,
-    total: stats.total,
-    correct: stats.correct,
-    wrong: stats.wrong,
-    timeSecs: stats.elapsed,
-  });
+
+  // get IDs of questions answered wrong this session
+  const wrongIds = state.activeQ
+    .filter(q => state.answered[q.id] !== undefined && state.answered[q.id] !== q.a)
+    .map(q => q.id);
+
+  await Promise.all([
+    saveScore(state.user, {
+      mode: state.mode,
+      category: state.category,
+      total: stats.total,
+      correct: stats.correct,
+      wrong: stats.wrong,
+      timeSecs: stats.elapsed,
+    }),
+    saveWrongAnswers(state.user.uid, wrongIds),
+  ]);
+
   state.saved = true;
 }
 
