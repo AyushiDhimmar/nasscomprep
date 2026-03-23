@@ -20,13 +20,14 @@ import {
 // 🔥  PASTE YOUR FIREBASE CONFIG HERE
 //  Firebase Console → Project Settings → Your Apps → Web
 // ─────────────────────────────────────────────
-export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+const firebaseConfig = {
+  apiKey: "AIzaSyAD0A7e88MbDU4kjidg0iDSJ2aoQNaZtyQ",
+  authDomain: "nasscomprep.firebaseapp.com",
+  projectId: "nasscomprep",
+  storageBucket: "nasscomprep.firebasestorage.app",
+  messagingSenderId: "280841749276",
+  appId: "1:280841749276:web:af35389af00c18e87df0d9",
+  measurementId: "G-X5MD27J4HG"
 };
 
 // ── Init ──────────────────────────────────────
