@@ -167,22 +167,61 @@ export function gradeInfo(pct) {
   return { emoji: "💪", label: "Keep practising", color: "var(--red)" };
 }
 
+// ── Seeded shuffle — same user + same question = same order within session ──
+function seededShuffle(arr, seed) {
+  const a = [...arr];
+  let s = seed;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    const j = Math.abs(s) % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Generate a numeric seed from user uid + question id
+// Different users get different scrambles; same user gets consistent order
+function makeSeed(uid, qid) {
+  const str = (uid || "guest") + "_" + qid;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
 // ── Render a single question card (shared HTML) ──
 export function renderQCard(q) {
   const ans = state.answered[q.id];
+
+  // ── Scramble options uniquely per user per question ──
+  const uid = state.user?.uid || "guest";
+  const seed = makeSeed(uid, q.id);
+  const correctOpt = q.o[q.a];                        // remember the correct text
+  const indices = seededShuffle([0, 1, 2, 3], seed);  // scrambled index order
+  const scrambled = indices.map(i => q.o[i]);        // reordered options
+  const newCorrect = scrambled.indexOf(correctOpt);   // new position of correct answer
+
+  // remap answered index to scrambled space
+  const answeredOrig = ans !== undefined ? q.o[ans] : null;
+  const answeredScrambled = answeredOrig !== null
+    ? scrambled.indexOf(answeredOrig) : null;
+
   const cardCls = ans !== undefined
     ? (ans === q.a ? "q-card correct-ans" : "q-card wrong-ans")
     : "q-card";
 
-  const opts = q.o.map((o, i) => {
+  const opts = scrambled.map((o, i) => {
     let cls = "opt";
     if (ans !== undefined) {
       cls += " locked";
-      if (i === q.a) cls += " reveal";
-      else if (i === ans) cls += " wrong";
+      if (i === newCorrect) cls += " reveal";
+      else if (i === answeredScrambled && ans !== q.a) cls += " wrong";
     }
     const letter = String.fromCharCode(65 + i);
-    return `<div class="${cls}" data-qid="${q.id}" data-idx="${i}">
+    // store original index so answer() still works correctly
+    const origIdx = q.o.indexOf(o);
+    return `<div class="${cls}" data-qid="${q.id}" data-idx="${origIdx}">
       <span class="opt-letter">${letter}.</span>
       <span>${o}</span>
     </div>`;
