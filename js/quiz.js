@@ -167,7 +167,7 @@ export function gradeInfo(pct) {
   return { emoji: "💪", label: "Keep practising", color: "var(--red)" };
 }
 
-// ── Seeded shuffle — same user + same question = same order within session ──
+// ── Seeded shuffle — consistent per user+question within a session ──
 function seededShuffle(arr, seed) {
   const a = [...arr];
   let s = seed;
@@ -179,8 +179,7 @@ function seededShuffle(arr, seed) {
   return a;
 }
 
-// Generate a numeric seed from user uid + question id
-// Different users get different scrambles; same user gets consistent order
+// Numeric seed from uid + question id
 function makeSeed(uid, qid) {
   const str = (uid || "guest") + "_" + qid;
   let hash = 0;
@@ -190,44 +189,55 @@ function makeSeed(uid, qid) {
   return Math.abs(hash);
 }
 
-// ── Render a single question card (shared HTML) ──
-export function renderQCard(q) {
-  const ans = state.answered[q.id];
-
-  // ── Scramble options uniquely per user per question ──
+// Get scrambled order for a question (returns array of original indices)
+// e.g. [2,0,3,1] means: show option2 first, option0 second, etc.
+export function getScrambledOrder(q) {
   const uid = state.user?.uid || "guest";
   const seed = makeSeed(uid, q.id);
-  const correctOpt = q.o[q.a];                        // remember the correct text
-  const indices = seededShuffle([0, 1, 2, 3], seed);  // scrambled index order
-  const scrambled = indices.map(i => q.o[i]);        // reordered options
-  const newCorrect = scrambled.indexOf(correctOpt);   // new position of correct answer
+  return seededShuffle([0, 1, 2, 3], seed);
+}
 
-  // remap answered index to scrambled space
-  const answeredOrig = ans !== undefined ? q.o[ans] : null;
-  const answeredScrambled = answeredOrig !== null
-    ? scrambled.indexOf(answeredOrig) : null;
+// ── Render a single question card ──
+export function renderQCard(q) {
+  // scrambledOrder[i] = original index of option shown at position i
+  const scrambledOrder = getScrambledOrder(q);
 
-  const cardCls = ans !== undefined
-    ? (ans === q.a ? "q-card correct-ans" : "q-card wrong-ans")
+  // What original index did user answer? (stored in state.answered)
+  const answeredOrigIdx = state.answered[q.id]; // undefined if not answered yet
+
+  // Is the answer correct?
+  const isCorrect = answeredOrigIdx === q.a;
+
+  // Card border colour
+  const cardCls = answeredOrigIdx !== undefined
+    ? (isCorrect ? "q-card correct-ans" : "q-card wrong-ans")
     : "q-card";
 
-  const opts = scrambled.map((o, i) => {
+  const opts = scrambledOrder.map((origIdx, displayPos) => {
     let cls = "opt";
-    if (ans !== undefined) {
+
+    if (answeredOrigIdx !== undefined) {
+      // question has been answered — lock all options
       cls += " locked";
-      if (i === newCorrect) cls += " reveal";
-      else if (i === answeredScrambled && ans !== q.a) cls += " wrong";
+      if (origIdx === q.a) {
+        // this is the correct option — always highlight green
+        cls += " reveal";
+      } else if (origIdx === answeredOrigIdx) {
+        // this is what the user clicked and it was wrong
+        cls += " wrong";
+      }
     }
-    const letter = String.fromCharCode(65 + i);
-    // store original index so answer() still works correctly
-    const origIdx = q.o.indexOf(o);
+
+    const letter = String.fromCharCode(65 + displayPos);
+
+    // data-idx stores the ORIGINAL index so answer() works correctly
     return `<div class="${cls}" data-qid="${q.id}" data-idx="${origIdx}">
       <span class="opt-letter">${letter}.</span>
-      <span>${o}</span>
+      <span>${q.o[origIdx]}</span>
     </div>`;
   }).join("");
 
-  const expShow = ans !== undefined ? " show" : "";
+  const expShow = answeredOrigIdx !== undefined ? " show" : "";
 
   return `<div class="${cardCls}" id="qc-${q.id}">
     <div class="q-top">
