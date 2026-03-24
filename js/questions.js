@@ -333,7 +333,6 @@ export const QUESTIONS = [
 ];
 
 
-
 // ── Helper: get questions by category ─────────
 export function getByCategory(cat) {
     return cat === "All" ? QUESTIONS : QUESTIONS.filter(q => q.t === cat);
