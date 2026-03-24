@@ -576,14 +576,15 @@
     function handleAnswer(qid, idx) {
       const isRight = answer(qid, idx);
       if (isRight === null) return;
-      // update card in DOM
       const card = document.getElementById(`qc-${qid}`);
       if (!card) return;
       card.classList.add(isRight ? "correct-ans" : "wrong-ans");
-      card.querySelectorAll(".opt").forEach((el, i) => {
+      const q = state.activeQ.find(q => q.id === qid);
+      card.querySelectorAll(".opt").forEach(el => {
         el.classList.add("locked");
-        if (i === state.activeQ.find(q => q.id === qid)?.a) el.classList.add("reveal");
-        else if (i === idx && !isRight) el.classList.add("wrong");
+        const origIdx = +el.dataset.idx;
+        if (origIdx === q.a) el.classList.add("reveal"); // correct answer
+        else if (origIdx === idx && !isRight) el.classList.add("wrong");  // what user clicked
       });
       const exp = document.getElementById(`exp-${qid}`);
       if (exp) exp.classList.add("show");
