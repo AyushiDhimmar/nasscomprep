@@ -284,7 +284,7 @@
         <div style="max-width:720px">
           <h2 class="fu" style="margin-bottom:.35rem">Choose your quiz mode</h2>
           <p class="fu2" style="margin-bottom:1.5rem; font-size:.9rem">
-            Questions load live from your Google Sheet — add new ones anytime.
+            310+ questions from the NASSCOM Participant Handbook. Pick a mode to begin.
           </p>
 
           <div id="q-loading" class="loading-state">
@@ -605,6 +605,13 @@
 
     async function showResult() {
       const s = getStats();
+
+      // BUG 7 FIX: don't save or show result if nothing was answered
+      if (s.total === 0) {
+        toast("Answer at least one question before viewing results.");
+        return;
+      }
+
       const g = gradeInfo(s.pct);
       $id("quiz-questions").innerHTML = "";
       $id("result-screen").style.display = "block";
@@ -615,10 +622,16 @@
       $id("res-wrong").textContent = s.wrong;
       $id("res-skip").textContent = s.outOf - s.total;
       $id("res-time").textContent = fmtTime(s.elapsed);
-      // save
+
+      // BUG 11 FIX: show error toast if save fails
       if (state.user && !state.saved) {
-        await saveSession();
-        $id("res-saved").textContent = "✅ Score saved to your history!";
+        try {
+          await saveSession();
+          $id("res-saved").textContent = "✅ Score saved to your history!";
+        } catch (e) {
+          $id("res-saved").textContent = "⚠️ Could not save score — check your connection.";
+          toast("Failed to save score. Check your internet connection.");
+        }
       } else if (!state.user) {
         $id("res-saved").textContent = "Sign in to save your score to the leaderboard.";
       }
@@ -632,8 +645,12 @@
     });
 
     // ── New session ───────────────────────────────
+    // BUG 4 FIX: reset selectedMode to default so old mode doesn't persist
     function resetToSplash() {
       quizStarted = false;
+      selectedMode = "random100";
+      selectedCat = "All";
+      selectedRound = 1;
       $id("mode-splash").style.display = "block";
       $id("quiz-area").style.display = "none";
       $id("stats-bar").style.display = "none";
@@ -643,6 +660,19 @@
       $id("btn-new-session").style.display = "none";
       $id("nav-mode-label").style.display = "none";
       curCat = "All"; curStatus = "all";
+
+      // BUG 5 FIX: re-check weak count and re-enable card if needed
+      const weakCt = getWeakCount(allQ);
+      $id("mc-weak").textContent = weakCt > 0 ? `${weakCt} weak questions` : "No weak areas yet";
+      const weakCard = $id("mc-weak-card");
+      if (weakCt > 0) weakCard.classList.remove("disabled");
+      else weakCard.classList.add("disabled");
+
+      // reset cat pills to All
+      document.querySelectorAll(".cat-pill").forEach(p => p.classList.remove("active"));
+      document.querySelector(".cat-pill")?.classList.add("active");
+      // hide round picker
+      $id("round-picker").style.display = "none";
     }
     $id("btn-new-session").addEventListener("click", resetToSplash);
     $id("btn-new-session2").addEventListener("click", resetToSplash);

@@ -14,9 +14,10 @@ export async function loadQuestions() {
 // Force-refresh (no-op now, kept for compatibility)
 export function clearCache() { }
 
-// Get all unique categories
+// Get all unique categories — BUG 6 FIX: sorted alphabetically for consistent order
 export function getCategories(questions) {
-  return ["All", ...new Set(questions.map(q => q.t).filter(Boolean))];
+  const cats = [...new Set(questions.map(q => q.t).filter(Boolean))].sort();
+  return ["All", ...cats];
 }
 
 // Fallback (not used anymore — kept for compatibility)

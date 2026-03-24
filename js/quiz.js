@@ -101,16 +101,18 @@ export function getFilteredQ(cat = "All", status = "all") {
 }
 
 // ── Save session to Firebase ──────────────────
+// BUG 7 FIX: guard zero total before saving
+// BUG 11 FIX: throws on error so quiz.html can show toast
 export async function saveSession() {
   if (!state.user || state.saved) return;
   const stats = getStats();
-  if (stats.total === 0) return;
+  if (stats.total === 0) return; // nothing answered — don't save
 
-  // get IDs of questions answered wrong this session
   const wrongIds = state.activeQ
     .filter(q => state.answered[q.id] !== undefined && state.answered[q.id] !== q.a)
     .map(q => q.id);
 
+  // throws on Firestore failure — caller handles toast
   await Promise.all([
     saveScore(state.user, {
       mode: state.mode,

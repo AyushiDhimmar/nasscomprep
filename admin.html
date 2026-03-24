@@ -519,11 +519,18 @@
             const d = ts.toDate ? ts.toDate() : new Date(ts);
             return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
         }
+        // BUG 9 FIX: handle both Firestore Timestamp and plain objects
         function isToday(ts) {
             if (!ts) return false;
-            const d = ts.toDate ? ts.toDate() : new Date(ts);
-            const now = new Date();
-            return d.toDateString() === now.toDateString();
+            try {
+                const d = typeof ts.toDate === "function" ? ts.toDate()
+                    : ts.seconds ? new Date(ts.seconds * 1000)
+                        : new Date(ts);
+                const now = new Date();
+                return d.getFullYear() === now.getFullYear() &&
+                    d.getMonth() === now.getMonth() &&
+                    d.getDate() === now.getDate();
+            } catch { return false; }
         }
         function scoreColor(pct) {
             if (pct >= 75) return "var(--green)";

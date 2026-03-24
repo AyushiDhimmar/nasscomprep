@@ -16,10 +16,7 @@ import {
   serverTimestamp, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ─────────────────────────────────────────────
-// 🔥  PASTE YOUR FIREBASE CONFIG HERE
-//  Firebase Console → Project Settings → Your Apps → Web
-// ─────────────────────────────────────────────
+// ── Firebase Config ───────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyAD0A7e88MbDU4kjidg0iDSJ2aoQNaZtyQ",
   authDomain: "nasscomprep.firebaseapp.com",
@@ -36,11 +33,13 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════
 //  AUTH HELPERS
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════
 
-/** Sign in with Google popup */
+// BUG 8 FIX: upsertUser is ONLY called here inside signInWithPopup
+// NOT inside onAuthStateChanged — so login history saves only on
+// actual sign-in clicks, not on every page refresh.
 export async function signInGoogle() {
   try {
     const result = await signInWithPopup(auth, provider);
@@ -52,17 +51,15 @@ export async function signInGoogle() {
   }
 }
 
-/** Sign out */
 export async function logOut() {
   await signOut(auth);
 }
 
-/** Listen for auth state changes */
+// onAuth does NOT call upsertUser — no login history on refresh
 export function onAuth(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
-/** Upsert user profile in Firestore + save login history */
 async function upsertUser(user) {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
@@ -79,7 +76,6 @@ async function upsertUser(user) {
     });
   }
 
-  // ── Save login history entry ──
   const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
     ? "Mobile" : "Desktop";
 
@@ -93,64 +89,61 @@ async function upsertUser(user) {
   });
 }
 
-/**
- * Save wrong question IDs for admin analytics
- * @param {string} uid
- * @param {number[]} wrongIds
- */
-export async function saveWrongAnswers(uid, wrongIds) {
-  if (!wrongIds || wrongIds.length === 0) return;
-  await addDoc(collection(db, "wrongAnswers"), {
-    uid,
-    questionIds: wrongIds,
-    createdAt: serverTimestamp(),
-  });
-}
-
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════
 //  SCORE HELPERS
-// ═══════════════════════════════════════════
+// ═══════════════════════════════════════
 
-/**
- * Save a completed quiz session
- * @param {object} user   - Firebase user object
- * @param {object} data   - { mode, category, total, correct, wrong, timeSecs }
- */
+// BUG 7 FIX: returns false if total === 0, throws on Firestore error
+// BUG 11 FIX: throws error so caller can show toast
 export async function saveScore(user, data) {
-  const pct = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
-
-  // add to scores collection (for leaderboard)
-  await addDoc(collection(db, "scores"), {
-    uid: user.uid,
-    name: user.displayName,
-    photo: user.photoURL,
-    mode: data.mode,
-    category: data.category || "All",
-    total: data.total,
-    correct: data.correct,
-    wrong: data.wrong,
-    pct,
-    timeSecs: data.timeSecs || 0,
-    createdAt: serverTimestamp(),
-  });
-
-  // update user best score
-  const userRef = doc(db, "users", user.uid);
-  const snap = await getDoc(userRef);
-  if (snap.exists()) {
-    const best = snap.data().bestScore || 0;
-    await setDoc(userRef, {
-      totalSessions: (snap.data().totalSessions || 0) + 1,
-      bestScore: Math.max(best, pct),
-      lastActiveAt: serverTimestamp(),
-    }, { merge: true });
+  if (!data.total || data.total === 0) return false;
+  const pct = Math.round((data.correct / data.total) * 100);
+  try {
+    await addDoc(collection(db, "scores"), {
+      uid: user.uid,
+      name: user.displayName,
+      photo: user.photoURL,
+      mode: data.mode,
+      category: data.category || "All",
+      total: data.total,
+      correct: data.correct,
+      wrong: data.wrong,
+      pct,
+      timeSecs: data.timeSecs || 0,
+      createdAt: serverTimestamp(),
+    });
+    const userRef = doc(db, "users", user.uid);
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+      const best = snap.data().bestScore || 0;
+      await setDoc(userRef, {
+        totalSessions: (snap.data().totalSessions || 0) + 1,
+        bestScore: Math.max(best, pct),
+        lastActiveAt: serverTimestamp(),
+      }, { merge: true });
+    }
+    return true;
+  } catch (e) {
+    console.error("saveScore error:", e);
+    throw e;
   }
 }
 
-/**
- * Fetch global leaderboard (top 20 by best pct per user)
- * Returns array sorted by highest pct, then quickest time
- */
+// BUG 11 FIX: throws on failure
+export async function saveWrongAnswers(uid, wrongIds) {
+  if (!wrongIds || wrongIds.length === 0) return;
+  try {
+    await addDoc(collection(db, "wrongAnswers"), {
+      uid,
+      questionIds: wrongIds,
+      createdAt: serverTimestamp(),
+    });
+  } catch (e) {
+    console.error("saveWrongAnswers error:", e);
+    throw e;
+  }
+}
+
 export async function fetchLeaderboard() {
   const q = query(
     collection(db, "scores"),
@@ -171,9 +164,6 @@ export async function fetchLeaderboard() {
   return rows.slice(0, 20);
 }
 
-/**
- * Fetch score history for one user (most recent 50)
- */
 export async function fetchHistory(uid) {
   const q = query(
     collection(db, "scores"),
@@ -187,9 +177,6 @@ export async function fetchHistory(uid) {
   return rows;
 }
 
-/**
- * Fetch user profile doc
- */
 export async function fetchUserProfile(uid) {
   const snap = await getDoc(doc(db, "users", uid));
   return snap.exists() ? snap.data() : null;
